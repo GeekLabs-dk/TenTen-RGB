@@ -22,7 +22,7 @@
 #define BUTTONPIN    0
 #define PIXELCOUNT  100
 #define MAXFUN      11
-int fun = MAXFUN-1; // Start up with pixelscroller
+int fun = MAXFUN - 1; // Start up with pixelscroller
 
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = Arduino pin number (most are valid)
@@ -179,7 +179,7 @@ const struct character font[font_elems] =
 */
 void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
 {
-  uint16_t tick = 0;
+  int16_t tick = 0;
   uint8_t off_col[3] = {0x0a, 0x0a, 0x0a}; // initialized with static startup colors
   uint8_t on_col[3] = {0x50, 0x05, 0x05};
 
@@ -213,7 +213,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
       uint32_t pick = (pix / 10) * strlen(text) * 6 + pix % 10 + tick;
       if (
         pick < matrix_length
-        && pick < (1+pix / 10) * strlen(text) * 6
+        && pick < (1 + pix / 10) * strlen(text) * 6
         && matrix[pick]
       )
         strip.setPixelColor(pix, on_col[0], on_col[1], on_col[2]);
@@ -224,24 +224,24 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
 
     strip.show();
 
-    // did we reach either end?
-    if (tick >= strlen(text) * 6 || tick == 0)
+    // Make it tick and do bounds checking
+    forward ? tick++ : tick--;
+    if ( tick > strlen(text) * 6
+         || tick < 0 )
     {
       forward = !forward;
       if (forward) {
+        tick++;
         off_col[0] = 0x00 + rand() & 0x0f;
         off_col[1] = 0x00 + rand() & 0x0f;
         off_col[2] = 0x00 + rand() & 0x0f;
       } else {
+        tick--;
         on_col[0] = 0x00 + rand() & 0xff;
         on_col[1] = 0x00 + rand() & 0xff;
         on_col[2] = 0x00 + rand() & 0xff;
       }
     }
-    if (forward)
-      tick++;
-    else
-      tick--;
     delay(wait);
   }
 }
@@ -287,7 +287,7 @@ void loop() {
       threelinefun(false);
       break;
     case 10:
-      scrolltext("GEEKLABS",0,0,25);// OG IB OG MMM OG ", 0, 0, 40);
+      scrolltext("GEEKLABS", 0, 0, 25); // OG IB OG MMM OG ", 0, 0, 40);
       //      scrolltext("MALOU MAIKA", 0, 0, 50);
     case 11:
       black();
