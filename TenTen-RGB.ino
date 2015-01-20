@@ -8,6 +8,9 @@
 // Based in part on circlergb.ino by Alex Donatelli
 // (http://www.instructables.com/id/A-Multicolor-LED-Lamp/?ALLSTEPS).
 //
+// Uses Adafuit's NeoPixel library for the raw LED protocol, get it at
+// https://github.com/adafruit/Adafruit_NeoPixel
+//
 // This program is free software: you can redistribute it and/or modify
 // it  under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -19,7 +22,7 @@
 #define BUTTONPIN    0
 #define PIXELCOUNT  100
 #define MAXFUN      11
-int fun = MAXFUN-1; 
+int fun = MAXFUN-1; // Start up with pixelscroller
 
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = Arduino pin number (most are valid)
@@ -31,7 +34,7 @@ int fun = MAXFUN-1;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXELCOUNT, PIXELPIN, NEO_GRB + NEO_KHZ800);
 
 // Structure representing a single pixel
-// This is for future use.
+// Not used, yet.
 struct pixel
 {
   uint8_t red;
@@ -46,7 +49,7 @@ struct character
   bool pixels[5][5];
 };
 
-const uint8_t font_elems = 'Z' - 'A' + 3 + 7; // Allocate memory for Danish alphabet + " ,.!?-+"
+const uint8_t font_elems = 'Z' - 'A' + 3 + 7; // Reserve memory for Danish alphabet + " ,.!?-+"
 const struct character font[font_elems] =
 {
   { 'A', {
@@ -171,6 +174,9 @@ const struct character font[font_elems] =
   }
 };
 
+/* Scroll a string bouncing off the ends.
+   Assumes 10x10 pixel display and a 5x5 pixel font.
+*/
 void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
 {
   uint16_t tick = 0;
