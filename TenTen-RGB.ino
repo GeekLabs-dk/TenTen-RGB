@@ -49,7 +49,7 @@ struct character
   bool pixels[5][5];
 };
 
-const uint8_t font_elems = 'Z' - 'A' + 3 + 7; // Reserve memory for Danish alphabet + " ,.!?-+"
+const uint8_t font_elems = 'Z' - 'A' + 3 + 7; // Reserve storage for Danish alphabet + " ,.!?-+"
 const struct character font[font_elems] =
 {
   { 'A', {
@@ -140,6 +140,14 @@ const struct character font[font_elems] =
       { 1, 0, 0, 0, 1 }
     }
   },
+{ 'N', {
+      { 1, 0, 0, 0, 1 },
+      { 1, 1, 0, 0, 1 },
+      { 1, 0, 1, 0, 1 },
+      { 1, 0, 0, 1, 1 },
+      { 1, 0, 0, 0, 1 }
+    }
+  },
   { 'S', {
       { 0, 1, 1, 1, 0 },
       { 1, 0, 0, 0, 0 },
@@ -185,64 +193,69 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
 
   uint16_t matrix_length = strlen(text) * (5 + 1) * 5; // 5x5 pixs + 1 pix for spacing pr. char
   bool *matrix = (bool*)malloc(matrix_length);
-  memset(matrix, 0, matrix_length);
 
-  // Assemble matrix representing string in pixels according to font definition
-  for (int c = 0; c < strlen(text); c++)
+  if (matrix)
   {
-    uint8_t cur_elem = 0;
-    while (font[cur_elem].ascii != text[c])
-      if (++cur_elem >= sizeof(font) / sizeof(struct character))
+
+    memset(matrix, 0, matrix_length);
+    // Assemble matrix representing string in pixels according to font definition
+    for (int c = 0; c < strlen(text); c++)
+    {
+      uint8_t cur_elem = 0;
+      while (font[cur_elem].ascii != text[c])
+        if (++cur_elem >= sizeof(font) / sizeof(struct character))
+        {
+          cur_elem--; // use last char in font for unknown chars
+          break;
+        }
+
+      for (int row = 0; row < 5; row++)
+        for (int col = 0; col < 5; col++)
+          matrix[ c * 6 + row * strlen(text) * 6  + col] = font[cur_elem].pixels[row][col];
+    }
+
+    //  write pixels from matrix to leds according to current offset (tick)
+    while (!buttonPressed())
+    {
+      static bool forward = true;
+      for (int pix = 0; pix < strip.numPixels(); pix++)
       {
-        cur_elem--; // use last char in font for unknown chars
-        break;
+        //              (  row   ) * row pixel len
+        uint32_t pick = (pix / 10) * strlen(text) * 6 + pix % 10 + tick;
+        if (
+          pick < matrix_length
+          && pick < (1 + pix / 10) * strlen(text) * 6
+          && matrix[pick]
+        )
+          strip.setPixelColor(pix, on_col[0], on_col[1], on_col[2]);
+        //        strip.setPixelColor(pix, rand(), rand(), rand());
+        else
+          strip.setPixelColor(pix, off_col[0], off_col[1], off_col[2]);
       }
 
-    for (int row = 0; row < 5; row++)
-      for (int col = 0; col < 5; col++)
-        matrix[ c * 6 + row * strlen(text) * 6  + col] = font[cur_elem].pixels[row][col];
-  }
+      strip.show();
 
-  //  write pixels from matrix to leds according to current offset (tick)
-  while (!buttonPressed())
-  {
-    static bool forward = true;
-    for (int pix = 0; pix < strip.numPixels(); pix++)
-    {
-      //              (  row   ) * row pixel len
-      uint32_t pick = (pix / 10) * strlen(text) * 6 + pix % 10 + tick;
-      if (
-        pick < matrix_length
-        && pick < (1 + pix / 10) * strlen(text) * 6
-        && matrix[pick]
-      )
-        strip.setPixelColor(pix, on_col[0], on_col[1], on_col[2]);
-      //        strip.setPixelColor(pix, rand(), rand(), rand());
-      else
-        strip.setPixelColor(pix, off_col[0], off_col[1], off_col[2]);
-    }
-
-    strip.show();
-
-    // Make it tick and do bounds checking
-    forward ? tick++ : tick--;
-    if ( tick > strlen(text) * 6
-         || tick < 0 )
-    {
-      forward = !forward;
-      if (forward) {
-        tick++;
-        off_col[0] = 0x00 + rand() & 0x0f;
-        off_col[1] = 0x00 + rand() & 0x0f;
-        off_col[2] = 0x00 + rand() & 0x0f;
-      } else {
-        tick--;
-        on_col[0] = 0x00 + rand() & 0xff;
-        on_col[1] = 0x00 + rand() & 0xff;
-        on_col[2] = 0x00 + rand() & 0xff;
+      // Make it tick and do bounds checking
+      forward ? tick++ : tick--;
+      if ( tick > strlen(text) * 6
+           || tick < 0 )
+      {
+        forward = !forward;
+        if (forward) {
+          tick++;
+          off_col[0] = 0x00 + rand() & 0x0f;
+          off_col[1] = 0x00 + rand() & 0x0f;
+          off_col[2] = 0x00 + rand() & 0x0f;
+        } else {
+          tick--;
+          on_col[0] = 0x00 + rand() & 0xff;
+          on_col[1] = 0x00 + rand() & 0xff;
+          on_col[2] = 0x00 + rand() & 0xff;
+        }
       }
+      delay(wait);
     }
-    delay(wait);
+    free(matrix);
   }
 }
 
