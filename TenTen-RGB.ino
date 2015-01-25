@@ -21,7 +21,7 @@
 #define BUTTONPIN    0
 #define PIXELCOUNT  100
 #define MAXFUN      11
-int fun = MAXFUN - 1; // Start up with pixelscroller
+int fun = MAXFUN - 1; // Start up with scroller
 
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = Arduino pin number (most are valid)
@@ -217,6 +217,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
     while (!buttonPressed())
     {
       static bool forward = true;
+      uint8_t wait_scale=1;
       for (int pix = 0; pix < strip.numPixels(); pix++)
       {
         //              (  row   ) * row pixel len
@@ -241,6 +242,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
       {
         forward = !forward;
         if (forward) {
+          wait_scale=10;
           tick++;
           off_col[0] = 0x00 + rand() & 0x0f;
           off_col[1] = 0x00 + rand() & 0x0f;
@@ -252,7 +254,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
           on_col[2] = 0x00 + rand() & 0xff;
         }
       }
-      delay(wait);
+      delay(wait*wait_scale);
     }
     free(matrix);
   }
@@ -299,7 +301,7 @@ void loop() {
       threelinefun(false);
       break;
     case 10:
-      scrolltext("GEEKLABS", 0, 0, 25); // OG IB OG MMM OG ", 0, 0, 40);
+      scrolltext("GEEKLABS", 0, 0, 25*3); // OG IB OG MMM OG ", 0, 0, 40);
       //      scrolltext("MALOU MAIKA", 0, 0, 50);
     case 11:
       black();
