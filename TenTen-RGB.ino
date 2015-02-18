@@ -382,7 +382,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, 
     while (!buttonPressed() && rounds)
     {
       static bool forward = true;
-      uint8_t wait_scale=1;
+      uint8_t wait_scale = 1;
       for (int pix = 0; pix < strip.numPixels(); pix++)
       {
         //              (  row   ) * row pixel len
@@ -407,7 +407,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, 
       {
         forward = !forward;
         if (forward) {
-          wait_scale=10;
+          wait_scale = 10;
           tick++;
           off_col[0] = 0x00 + rand() & 0x0f;
           off_col[1] = 0x00 + rand() & 0x0f;
@@ -420,7 +420,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, 
           on_col[2] = 0x00 + rand() & 0xff;
         }
       }
-      delay(wait*wait_scale);
+      delay(wait * wait_scale);
     }
     free(matrix);
   }
