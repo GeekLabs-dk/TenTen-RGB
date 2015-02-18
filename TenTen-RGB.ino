@@ -20,6 +20,7 @@
 #define PIXELPIN     2
 #define BUTTONPIN    0
 #define PIXELCOUNT  100
+
 #define MAXFUN      11
 int fun = MAXFUN - 1; // Start up with scroller
 
@@ -42,21 +43,25 @@ struct pixel
   uint8_t brightness; // Brightness is not part of ws281x protocol, must be a NeoPixel library scaling factor
 };
 
+const uint8_t FONT_WIDTH   = 4;
+const uint8_t FONT_HEIGHT  = 5;
+const uint8_t CHAR_SPACING = 1;
+
 struct character
 {
   char ascii;
-  bool pixels[5][5];
+  bool pixels[FONT_WIDTH+1][FONT_HEIGHT];
 };
 
-const uint8_t font_elems = 'Z' - 'A' + 3 + 7; // Reserve storage for Danish alphabet + " ,.!?-+"
+const uint8_t font_elems = /*'Z' - 'A'*/ 28 + 3 + 7; // Reserve storage for Danish alphabet + " ,.!?-_"
 const struct character font[font_elems] =
 {
   { 'A', {
-      { 0, 0, 1, 0, 0 },
-      { 0, 1, 0, 1, 0 },
-      { 0, 1, 1, 1, 0 },
-      { 1, 0, 0, 0, 1 },
-      { 1, 0, 0, 0, 1 }
+      { 0, 1, 1, 0, 0 },
+      { 1, 0, 0, 1, 0 },
+      { 1, 1, 1, 1, 0 },
+      { 1, 0, 0, 1, 0 },
+      { 1, 0, 0, 1, 0 }
     }
   },
   { 'B', {
@@ -91,6 +96,14 @@ const struct character font[font_elems] =
       { 1, 1, 1, 1, 0 }
     }
   },
+  { 'F', {
+      { 1, 1, 1, 1 },
+      { 1, 0, 0, 0 },
+      { 1, 1, 1, 0 },
+      { 1, 0, 0, 0 },
+      { 1, 0, 0, 0 }
+    }
+  },
   { 'G', {
       { 0, 1, 1, 0, 0 },
       { 1, 0, 0, 1, 0 },
@@ -99,52 +112,92 @@ const struct character font[font_elems] =
       { 0, 1, 1, 0, 0 }
     }
   },
+  { 'H', {
+      { 1, 0, 0, 1 },
+      { 1, 0, 0, 1 },
+      { 1, 1, 1, 1 },
+      { 1, 0, 0, 1 },
+      { 1, 0, 0, 1 }
+    }
+  },
+  { 'I', {
+      { 1, 1, 1, 0 },
+      { 0, 1, 0, 0 },
+      { 0, 1, 0, 0 },
+      { 0, 1, 0, 0 },
+      { 1, 1, 1, 0 }
+    }
+  },
+  { 'J', {
+      { 0, 1, 1, 1 },
+      { 0, 0, 0, 1 },
+      { 0, 0, 0, 1 },
+      { 1, 0, 0, 1 },
+      { 0, 1, 1, 0 }
+    }
+  },
   { 'K', {
-      { 1, 0, 0, 1, 0 },
-      { 1, 0, 1, 0, 0 },
-      { 1, 1, 0, 0, 0 },
-      { 1, 0, 1, 0, 0 },
-      { 1, 0, 0, 1, 0 }
+      { 1, 0, 0, 1 },
+      { 1, 0, 1, 0 },
+      { 1, 1, 0, 0 },
+      { 1, 0, 1, 0 },
+      { 1, 0, 0, 1 }
     }
   },
   { 'L', {
-      { 1, 0, 0, 0, 0 },
-      { 1, 0, 0, 0, 0 },
-      { 1, 0, 0, 0, 0 },
-      { 1, 0, 0, 0, 0 },
-      { 1, 1, 1, 1, 0 }
+      { 1, 0, 0, 0 },
+      { 1, 0, 0, 0 },
+      { 1, 0, 0, 0 },
+      { 1, 0, 0, 0 },
+      { 1, 1, 1, 1 }
     }
   },
   { 'M', {
-      { 1, 0, 0, 0, 1 },
+      { 1, 0, 0, 1, 1 },
+      { 1, 1, 1, 1, 1 },
+      { 1, 0, 0, 1, 1 },
+      { 1, 0, 0, 1, 1 },
+      { 1, 0, 0, 1, 1 }
+    }
+  },
+  { 'N', {
       { 1, 1, 0, 1, 1 },
-      { 1, 0, 1, 0, 1 },
-      { 1, 0, 0, 0, 1 },
-      { 1, 0, 0, 0, 1 }
+      { 1, 1, 0, 1, 1 },
+      { 1, 0, 1, 1, 1 },
+      { 1, 0, 1, 1, 1 },
+      { 1, 0, 0, 1, 1 }
     }
   },
   { 'O', {
-      { 0, 1, 1, 1, 0 },
-      { 1, 0, 0, 0, 1 },
-      { 1, 0, 0, 0, 1 },
-      { 1, 0, 0, 0, 1 },
-      { 0, 1, 1, 1, 0 }
-    }
-  },
-  { 'M', {
-      { 1, 0, 0, 0, 1 },
-      { 1, 1, 0, 1, 1 },
-      { 1, 0, 1, 0, 1 },
-      { 1, 0, 0, 0, 1 },
-      { 1, 0, 0, 0, 1 }
-    }
-  },
-{ 'N', {
-      { 1, 0, 0, 0, 1 },
-      { 1, 1, 0, 0, 1 },
-      { 1, 0, 1, 0, 1 },
+      { 0, 1, 1, 0, 0 },
       { 1, 0, 0, 1, 1 },
-      { 1, 0, 0, 0, 1 }
+      { 1, 0, 0, 1, 1 },
+      { 1, 0, 0, 1, 1 },
+      { 0, 1, 1, 0, 0 }
+    }
+  },
+  { 'P', {
+      { 1, 1, 1, 0 },
+      { 1, 0, 0, 1 },
+      { 1, 1, 1, 0 },
+      { 1, 0, 0, 0 },
+      { 1, 0, 0, 0 }
+    }
+  },
+  { 'Q', {
+      { 0, 1, 1, 0 },
+      { 1, 0, 0, 1 },
+      { 1, 0, 0, 1 },
+      { 1, 0, 1, 1 },
+      { 0, 1, 1, 1 }
+    }
+  },
+  { 'R', {
+      { 1, 1, 1, 0 },
+      { 1, 0, 0, 1 },
+      { 1, 1, 1, 0 },
+      { 1, 0, 1, 0 },
+      { 1, 0, 0, 1 }
     }
   },
   { 'S', {
@@ -155,28 +208,140 @@ const struct character font[font_elems] =
       { 1, 1, 1, 0, 0 }
     }
   },
-  { 'U', {
-      { 1, 0, 0, 0, 1 },
-      { 1, 0, 0, 0, 1 },
-      { 1, 0, 0, 0, 1 },
-      { 1, 0, 0, 0, 1 },
-      { 0, 1, 1, 1, 0 }
+  { 'T', {
+      { 1, 1, 1, 0 },
+      { 0, 1, 0, 0 },
+      { 0, 1, 0, 0 },
+      { 0, 1, 0, 0 },
+      { 0, 1, 0, 0 }
     }
   },
-  { 'I', {
-      { 0, 1, 1, 1, 0 },
-      { 0, 0, 1, 0, 0 },
-      { 0, 0, 1, 0, 0 },
-      { 0, 0, 1, 0, 0 },
-      { 0, 1, 1, 1, 0 }
+  { 'U', {
+      { 1, 0, 0, 1, 1 },
+      { 1, 0, 0, 1, 1 },
+      { 1, 0, 0, 1, 1 },
+      { 1, 0, 0, 1, 1 },
+      { 1, 1, 1, 1, 0 }
+    }
+  },
+  { 'V', {
+      { 1, 0, 0, 1 },
+      { 1, 0, 0, 1 },
+      { 1, 0, 0, 1 },
+      { 1, 0, 0, 1 },
+      { 0, 1, 1, 0 }
+    }
+  },
+  { 'W', {
+      { 1, 0, 0, 1 },
+      { 1, 0, 0, 1 },
+      { 1, 0, 0, 1 },
+      { 0, 1, 1, 0 },
+      { 0, 1, 1, 0 }
+    }
+  },
+  { 'X', {
+      { 1, 0, 0, 1 },
+      { 0, 1, 1, 0 },
+      { 0, 1, 1, 0 },
+      { 0, 1, 1, 0 },
+      { 1, 0, 0, 1 }
+    }
+  },
+  { 'Y', {
+      { 1, 0, 1, 0 },
+      { 1, 0, 1, 0 },
+      { 0, 1, 0, 0 },
+      { 0, 1, 0, 0 },
+      { 0, 1, 0, 0 }
+    }
+  },
+  { 'Z', {
+      { 1, 1, 1, 1 },
+      { 0, 0, 1, 1 },
+      { 0, 1, 1, 0 },
+      { 1, 1, 0, 0 },
+      { 1, 1, 1, 1 }
+    }
+  },
+  { 'Æ', {
+      { 0, 1, 1, 1 },
+      { 0, 1, 1, 0 },
+      { 1, 0, 1, 1 },
+      { 1, 1, 1, 0 },
+      { 1, 0, 1, 1 }
+    }
+  },
+  { 'Ø', {
+      { 0, 1, 1, 1 },
+      { 1, 0, 1, 1 },
+      { 1, 1, 1, 1 },
+      { 1, 1, 0, 1 },
+      { 1, 1, 1, 0 }
+    }
+  },
+  { 'Å', {
+      { 0, 1, 1, 0 },
+      { 0, 1, 1, 0 },
+      { 1, 0, 0, 1 },
+      { 1, 1, 1, 1 },
+      { 1, 0, 0, 1 }
+    }
+  },
+  { ',', {
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 1, 0 },
+      { 0, 0, 1, 0 }
+    }
+  },
+  { '.', {
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 1, 0 }
+    }
+  },
+  { '!', {
+      { 0, 1, 1, 0 },
+      { 0, 1, 1, 0 },
+      { 0, 1, 1, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 1, 1, 0 }
+    }
+  },
+  { '?', {
+      { 0, 1, 1, 0 },
+      { 0, 0, 0, 1 },
+      { 0, 0, 1, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 1, 0 }
+    }
+  },
+  { '-', {
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 1, 1, 1, 1 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 }
+    }
+  },
+  { '_', {
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 1, 1, 1, 1 }
     }
   },
   { ' ', {
-      { 0, 0, 0, 0, 0 },
-      { 0, 0, 0, 0, 0 },
-      { 0, 0, 0, 0, 0 },
-      { 0, 0, 0, 0, 0 },
-      { 0, 0, 0, 0, 0 }
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 },
+      { 0, 0, 0, 0 }
     }
   }
 };
@@ -184,13 +349,13 @@ const struct character font[font_elems] =
 /* Scroll a string bouncing off the ends.
    Assumes 10x10 pixel display and a 5x5 pixel font.
 */
-void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
+void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, uint8_t rounds=-1)
 {
   int16_t tick = 0;
   uint8_t off_col[3] = {0x0a, 0x0a, 0x0a}; // initialized with static startup colors
   uint8_t on_col[3] = {0x50, 0x05, 0x05};
 
-  uint16_t matrix_length = strlen(text) * (5 + 1) * 5; // 5x5 pixs + 1 pix for spacing pr. char
+  uint16_t matrix_length = strlen(text) * (FONT_WIDTH + CHAR_SPACING) * FONT_HEIGHT; // 4x5 pixs + 1 pix for spacing pr. char
   bool *matrix = (bool*)malloc(matrix_length);
 
   if (matrix)
@@ -208,23 +373,23 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
           break;
         }
 
-      for (int row = 0; row < 5; row++)
-        for (int col = 0; col < 5; col++)
-          matrix[ c * 6 + row * strlen(text) * 6  + col] = font[cur_elem].pixels[row][col];
+      for (int row = 0; row < FONT_HEIGHT; row++)
+        for (int col = 0; col < FONT_WIDTH; col++)
+          matrix[ c * (FONT_WIDTH+CHAR_SPACING) + row * strlen(text) * (FONT_WIDTH+CHAR_SPACING) + col] = font[cur_elem].pixels[row][col];
     }
 
     //  write pixels from matrix to leds according to current offset (tick)
-    while (!buttonPressed())
+    while (!buttonPressed() && rounds)
     {
       static bool forward = true;
       uint8_t wait_scale=1;
       for (int pix = 0; pix < strip.numPixels(); pix++)
       {
         //              (  row   ) * row pixel len
-        uint32_t pick = (pix / 10) * strlen(text) * 6 + pix % 10 + tick;
+        uint32_t pick = (pix / 10) * strlen(text) * (FONT_WIDTH+CHAR_SPACING) + pix % 10 + tick;
         if (
           pick < matrix_length
-          && pick < (1 + pix / 10) * strlen(text) * 6
+          && pick < (1 + pix / 10) * strlen(text) * (FONT_WIDTH+CHAR_SPACING)
           && matrix[pick]
         )
           strip.setPixelColor(pix, on_col[0], on_col[1], on_col[2]);
@@ -237,7 +402,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
 
       // Make it tick and do bounds checking
       forward ? tick++ : tick--;
-      if ( tick > strlen(text) * 6
+      if ( tick > strlen(text) * (FONT_WIDTH+CHAR_SPACING)
            || tick < 0 )
       {
         forward = !forward;
@@ -247,6 +412,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000)
           off_col[0] = 0x00 + rand() & 0x0f;
           off_col[1] = 0x00 + rand() & 0x0f;
           off_col[2] = 0x00 + rand() & 0x0f;
+          rounds--;
         } else {
           tick--;
           on_col[0] = 0x00 + rand() & 0xff;
@@ -301,14 +467,16 @@ void loop() {
       threelinefun(false);
       break;
     case 10:
-      scrolltext("GEEKLABS", 0, 0, 25*3); // OG IB OG MMM OG ", 0, 0, 40);
-      //      scrolltext("MALOU MAIKA", 0, 0, 50);
+      scrolltext("ABCDEFGHIJKLMNOPQRST", 0, 0, 25*5, 1);
+      scrolltext("UVWXYZ ,.!?-_", 0, 0, 25*5, 1);
+      scrolltext("GEEKLABS RULLER", 0, 0, 25*5, 2);
+      scrolltext("MALOU MAIKA", 0, 0, 50);
+      break;
     case 11:
       black();
       break;
   }
 }
-
 
 void threelinefun(boolean go_random)
 {
