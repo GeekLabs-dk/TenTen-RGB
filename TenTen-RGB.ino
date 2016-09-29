@@ -18,8 +18,8 @@
 #include <Adafruit_NeoPixel.h>
 
 #define PIXELPIN     2
-#define BUTTONPIN    0
-#define PIXELCOUNT  100
+#define BUTTONPIN    12
+#define PIXELCOUNT  50
 
 #define MAXFUN      11
 int fun = MAXFUN - 1; // Start up with scroller
@@ -349,18 +349,22 @@ const struct character font[font_elems] =
 /* Scroll a string bouncing off the ends.
    Assumes 10x10 pixel display and a 5x5 pixel font.
 */
+#define DISPLAY_WIDTH 5
+#define DISPLAY_HEIGHT 5
+#define DISPLAY_FIRST_PIXEL_ROW 0
+#define DISPLAY_FIRST_PIXEL_COL 9
 void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, uint8_t rounds=-1)
 {
   int16_t tick = 0;
   uint8_t off_col[3] = {0x0a, 0x0a, 0x0a}; // initialized with static startup colors
   uint8_t on_col[3] = {0x50, 0x05, 0x05};
 
-  uint16_t matrix_length = strlen(text) * (FONT_WIDTH + CHAR_SPACING) * FONT_HEIGHT; // 4x5 pixs + 1 pix for spacing pr. char
+  uint16_t row_length = strlen(text) * (FONT_WIDTH+CHAR_SPACING);
+  uint16_t matrix_length = row_length * FONT_HEIGHT;
   bool *matrix = (bool*)malloc(matrix_length);
 
   if (matrix)
   {
-
     memset(matrix, 0, matrix_length);
     // Assemble matrix representing string in pixels according to font definition
     for (int c = 0; c < strlen(text); c++)
@@ -375,7 +379,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, 
 
       for (int row = 0; row < FONT_HEIGHT; row++)
         for (int col = 0; col < FONT_WIDTH; col++)
-          matrix[ c * (FONT_WIDTH+CHAR_SPACING) + row * strlen(text) * (FONT_WIDTH+CHAR_SPACING) + col] = font[cur_elem].pixels[row][col];
+          matrix[ c * (FONT_WIDTH+CHAR_SPACING) + row * row_length + col] = font[cur_elem].pixels[row][col];
     }
 
     //  write pixels from matrix to leds according to current offset (tick)
@@ -385,11 +389,11 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, 
       uint8_t wait_scale = 1;
       for (int pix = 0; pix < strip.numPixels(); pix++)
       {
-        //              (  row   ) * row pixel len
-        uint32_t pick = (pix / 10) * strlen(text) * (FONT_WIDTH+CHAR_SPACING) + pix % 10 + tick;
+        uint32_t row_nr = (pix / DISPLAY_WIDTH);
+        uint32_t pick = row_nr*row_length + pix % DISPLAY_WIDTH + tick;
         if (
           pick < matrix_length
-          && pick < (1 + pix / 10) * strlen(text) * (FONT_WIDTH+CHAR_SPACING)
+          && pick < (1 + pix / DISPLAY_WIDTH) * strlen(text) * (FONT_WIDTH+CHAR_SPACING)
           && matrix[pick]
         )
           strip.setPixelColor(pix, on_col[0], on_col[1], on_col[2]);
@@ -429,7 +433,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, 
 void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
-  pinMode(BUTTONPIN, INPUT);
+  pinMode(BUTTONPIN, INPUT_PULLUP);
 }
 
 void loop() {
