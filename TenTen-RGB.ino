@@ -10,6 +10,9 @@
 // Uses Adafuit's NeoPixel library for the raw LED protocol, get it at
 // https://github.com/adafruit/Adafruit_NeoPixel
 //
+// Also includes code from the WiFiWebServer sketch from the ESP8266
+// distribution.
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -23,6 +26,7 @@
 
 #define MAXFUN      11
 int fun = MAXFUN - 1; // Start up with scroller
+String deftext="CODING PIRATES!";
 
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = Arduino pin number (most are valid)
@@ -351,17 +355,27 @@ const struct character font[font_elems] =
 */
 #define DISPLAY_WIDTH 5
 #define DISPLAY_HEIGHT 5
-#define DISPLAY_FIRST_PIXEL_ROW 0
-#define DISPLAY_FIRST_PIXEL_COL 9
-void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, uint8_t rounds=-1)
+#define DISPLAY_FIRST_PIXEL_ROW 4
+#define DISPLAY_FIRST_PIXEL_COL 0
+#define DISPLAY_HORIZONTALLY_CONNECTED false
+#define DISPLAY_SNAKE_WRAP false
+void scrolltext(const char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, uint8_t rounds=-1)
 {
+  if (!strlen(text))
+  {
+    Serial.println("No text to scroll!");
+    return;
+  }
   int16_t tick = 0;
+  bool forward = false;
   uint8_t off_col[3] = {0x0a, 0x0a, 0x0a}; // initialized with static startup colors
   uint8_t on_col[3] = {0x50, 0x05, 0x05};
 
   uint16_t row_length = strlen(text) * (FONT_WIDTH+CHAR_SPACING);
   uint16_t matrix_length = row_length * FONT_HEIGHT;
   bool *matrix = (bool*)malloc(matrix_length);
+  Serial.print("scrolltext: ");
+  Serial.println(text);
 
   if (matrix)
   {
@@ -382,10 +396,10 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, 
           matrix[ c * (FONT_WIDTH+CHAR_SPACING) + row * row_length + col] = font[cur_elem].pixels[row][col];
     }
 
-    //  write pixels from matrix to leds according to current offset (tick)
+    // write visible pixels from matrix to leds according to current offset (tick)
+    // until button press or requested rounds are done
     while (!buttonPressed() && rounds)
     {
-      static bool forward = true;
       uint8_t wait_scale = 1;
       for (int pix = 0; pix < strip.numPixels(); pix++)
       {
@@ -411,7 +425,7 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, 
       {
         forward = !forward;
         if (forward) {
-          wait_scale = 10;
+          wait_scale = 10; // more delay at string start for readability
           tick++;
           off_col[0] = 0x00 + rand() & 0x0f;
           off_col[1] = 0x00 + rand() & 0x0f;
@@ -428,16 +442,41 @@ void scrolltext(char *text, uint8_t x = 0, uint8_t y = 0, uint16_t wait = 2000, 
     }
     free(matrix);
   }
+  else
+    Serial.print("Not enough memory for string!");
 }
+
+#ifdef ESP8266
+#include <ESP8266WiFi.h>
+WiFiServer server(80);
+#endif
 
 void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
   pinMode(BUTTONPIN, INPUT_PULLUP);
+  Serial.begin(9600);
+  Serial.println("TenTen-RGB");
+
+#ifdef ESP8266
+  wifiConnect();
+#endif
 }
 
+#ifdef ESP8266 // we're exceeding an Uno's memory, for now yank out this string to keep within
+const String funnames[MAXFUN+1]={"rainbow","rainbowCycle","theaterChaseRainbow","movingColor","bouncingColor","fadingColor","psycho","white","threelinefun","threelinefun 2","scrolltext","black"};
+#endif
+int funlastwritten=-1;
 void loop() {
   strip.setBrightness(50);
+
+  // Make sure button is checked even if current fun doesn't do it
+  buttonPressed();
+  if (fun != funlastwritten)
+  {
+    Serial.println(fun);//names[fun]);
+    funlastwritten=fun;
+  }
 
   switch (fun) {
     case 0:
@@ -471,16 +510,117 @@ void loop() {
       threelinefun(false);
       break;
     case 10:
-      scrolltext("ABCDEFGHIJKLMNOPQRST", 0, 0, 25*5, 1);
-      scrolltext("UVWXYZ ,.!?-_", 0, 0, 25*5, 1);
-      scrolltext("GEEKLABS RULLER", 0, 0, 25*5, 2);
-      scrolltext("MALOU MAIKA", 0, 0, 50);
+//      scrolltext("ABCDEFGHIJKLMNOPQRST", 0, 0, 25*5, 1);
+//      scrolltext("UVWXYZ ,.!?-_", 0, 0, 25*5, 1);
+//      scrolltext("GEEKLABS RULLER", 0, 0, 25*5, 2);
+//      scrolltext("MALOU MAIKA", 0, 0, 50);
+      deftext.toUpperCase();
+      scrolltext(deftext.c_str(), 0, 0, 150);
       break;
     case 11:
       black();
       break;
   }
 }
+
+#ifdef ESP8266
+bool wifiConnect(){
+  // Connect to WiFi network
+  #include "wifis.h" // include user supplied passwords (see wifis_template.h)
+  if ( sizeof(wifis_ssids) && (sizeof(wifis_ssids) == sizeof(wifis_passwords)) )
+  {
+    Serial.println();
+    Serial.println();
+
+    int wifis_idx=-1, loops=0;
+    while (WiFi.status() != WL_CONNECTED) {
+      if (loops++%20==0) {
+        if (loops>1) {
+          Serial.print(F("\n\Couldn't connect to WiFi: "));
+          Serial.println(wifis_ssids[wifis_idx%sizeof(wifis_ssids)]);
+        }
+        wifis_idx++;
+        Serial.print(F("Attempting to connect to WiFi: "));
+        Serial.println(wifis_ssids[wifis_idx%sizeof(wifis_ssids)]);
+        WiFi.begin(wifis_ssids[wifis_idx%sizeof(wifis_ssids)], wifis_passwords[wifis_idx%sizeof(wifis_ssids)]);
+        Serial.print(F("Waiting for connection"));
+      }
+      Serial.write(".");
+      delay(500);
+    }
+    Serial.println("");
+    Serial.println(F("WiFi connected"));
+
+    // Start the server
+    server.begin();
+    Serial.print(F("Server started on  IP: "));
+    Serial.println(WiFi.localIP());
+    //deftext = "My IP is "+WiFi.localIP();
+  }
+  else
+    Serial.println("No or invalid wifi information defined, see wifis_template.h");
+}
+
+bool receiveHTTP() {
+  // Check if a client has connected
+  WiFiClient client = server.available();
+  if (!client) {
+    return false;
+  }
+
+  // Wait until the client sends some data
+  Serial.println("new client");
+  while(!client.available()){
+    delay(1);
+  }
+
+  // Read the first line of the request
+  String req = client.readStringUntil('\r');
+  Serial.println(req);
+  client.flush();
+
+  // Match the request
+  if (req.indexOf("/fun/text/") != -1)
+    deftext = req.substring(req.indexOf("/fun/text/")+10, req.lastIndexOf(' '));
+  else if (req.indexOf("/fun/") != -1) {
+    String val = req.substring(req.indexOf("/fun/")+5, req.lastIndexOf(' '));
+    if (val.toInt() >= 0 && val.toInt() <= MAXFUN)
+      fun = val.toInt();
+  }
+/*  else {
+    Serial.println("invalid request");
+    client.stop();
+    return false;
+  }
+*/
+
+  client.flush();
+  String funString(fun);
+  // Prepare the response
+  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nFun is now ";
+  s += funnames[fun];
+  s += " (";
+  s += funString;
+  s += ")<br>Text is now ";
+  s += deftext;
+  s += "<p><a href='/fun/";
+  s += (fun==0?MAXFUN:fun-1);
+  s += "'><< previous </a>&nbsp;";
+  s += "<a href='/fun/";
+  s += (fun==MAXFUN?0:fun+1);
+  s += "'> next >></a>";
+  s +="</html>\n";
+  //s +="<p><input type=text id=text onSubmit='location.href='></html>\n";
+
+  // Send the response to the client
+  client.print(s);
+  delay(1);
+  Serial.println("Client disonnected");
+  // The client will actually be disconnected
+  // when the function returns and 'client' object is detroyed
+  return true;
+}
+#endif
 
 void threelinefun(boolean go_random)
 {
@@ -751,8 +891,13 @@ boolean buttonPressed() {
     if (pressed) {
       fun++;
       if (fun > MAXFUN) fun = 0;
-      while (!digitalRead(BUTTONPIN));
+      while (!digitalRead(BUTTONPIN))
+      ;
     }
   }
+#ifdef ESP8266
+  else if (receiveHTTP())
+    return true; // makes main loop reevaluate current fun
+#endif
   return (pressed);
 }
