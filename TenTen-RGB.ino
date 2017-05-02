@@ -554,7 +554,7 @@ bool wifiConnect(){
     // Start the server
     server.begin();
     Serial.print(F("Server started on  IP: "));
-    Serial.println(WiFi.localIP());
+    Serial.println("My IP is "+WiFi.localIP());
     //deftext = "My IP is "+WiFi.localIP();
   }
   else
@@ -562,6 +562,8 @@ bool wifiConnect(){
 }
 
 bool receiveHTTP() {
+  Serial.print("Server status:");
+  Serial.println(server.status());
   // Check if a client has connected
   WiFiClient client = server.available();
   if (!client) {
